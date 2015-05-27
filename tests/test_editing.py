@@ -68,3 +68,16 @@ class TestCodeEditing(unittest.TestCase):
         self.assertEqual(c[0], 'A text\n')
         c.clear()
         self.assertRaises(IndexError, c.__getitem__, 0)
+
+    def test_ending_newline(self):
+        f = io.StringIO(u'A text\nwith several\nlines\n')
+        c = Code(f, 'text')
+        # If the last line ends with a newline, there should
+        # be an extra empty line.
+        self.assertEqual(c[3], '')
+
+    def test_len(self):
+        # Getting the length should read in the whole file.
+        f = io.StringIO(u'A text\nwith several\nlines')
+        c = Code(f, 'text')
+        self.assertEqual(len(c), 3)

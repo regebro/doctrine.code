@@ -34,11 +34,13 @@ class Code(collections.Sized, collections.Iterable):
                     break
                 self.lines.append(line)
                 self.widgets.append(None)
+            self._check_eof()
 
-        while index >= len(self):
+        while index >= len(self.lines):
             line = self.file.readline()
             if not line:
-                raise IndexError
+                self._check_eof()
+                break
             self.lines.append(line)
             self.widgets.append(None)
 
@@ -48,7 +50,16 @@ class Code(collections.Sized, collections.Iterable):
         return iter(self.lines)
 
     def __len__(self):
+        # Read in whole file:
+        self[-1]
         return len(self.lines)
+
+    def _check_eof(self):
+        # When reaching the end of file, check if the last line ends in
+        # a line feed. In that case, add an empty "dummy" line.
+        if self.lines[-1][-1] in ('\r', '\n'):
+            self.lines.append('')
+
 
     def insert(self, index, value):
         'S.insert(index, value) -- insert value before index'
