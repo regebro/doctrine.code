@@ -2,6 +2,16 @@
 import collections
 
 
+# I'm not using abc's, because I want to be able for plugins to implement the
+# API only partially.
+
+class Analyzer(object):
+    def __init__(self, code):
+        self.code = code
+
+    def find_block(self, start_row, max_block):
+        raise NotImplementedError
+
 # Although Code is mutable, and a sequence, but does not implement all methods
 # of MutableSequence or Sequence. It only implements all methods from
 # Sized and Iterable.
@@ -9,9 +19,8 @@ import collections
 class Code(collections.Sized, collections.Iterable):
     """A lazy list interface for a file with code in it."""
 
-    def __init__(self, file, filetype, read_ahead=50, newline='\n'):
+    def __init__(self, file, read_ahead=50, newline='\n'):
         self.file = file
-        self.filetype = filetype
         self.lines = []
         self.widgets = [] # Cache for widgets
         self.read_ahead = read_ahead
