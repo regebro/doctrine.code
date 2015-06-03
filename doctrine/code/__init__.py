@@ -22,17 +22,17 @@ class Code(collections.Sized, collections.Iterable):
     def __init__(self, file, read_ahead=50, newline='\n'):
         self.file = file
         self.lines = []
-        self.widgets = [] # Cache for widgets
+        self.tokens = [] # Cache for widgets
         self.read_ahead = read_ahead
         self.newline = newline
 
     def __setitem__(self, index, value):
         self.lines[index] = value
-        self.widgets[index] = None
+        self.tokens[index] = None
 
     def __delitem__(self, index):
         del self.lines[index]
-        del self.widgets[index]
+        del self.tokens[index]
 
     def __getitem__(self, index):
         if index < 0:
@@ -42,7 +42,7 @@ class Code(collections.Sized, collections.Iterable):
                 if not line:
                     break
                 self.lines.append(line)
-                self.widgets.append(None)
+                self.tokens.append(None)
             self._check_eof()
 
         while index >= len(self.lines):
@@ -51,7 +51,7 @@ class Code(collections.Sized, collections.Iterable):
                 self._check_eof()
                 break
             self.lines.append(line)
-            self.widgets.append(None)
+            self.tokens.append(None)
 
         return self.lines[index]
 
@@ -77,19 +77,19 @@ class Code(collections.Sized, collections.Iterable):
         self[index]
         # Now we can insert:
         self.lines.insert(index, value)
-        self.widgets.insert(index, None)
+        self.tokens.insert(index, None)
 
     def append(self, value):
         'S.append(value) -- append value to the end of the sequence'
         if not self[-1][-1] in ('\n', '\r'):
             self[-1] = self[-1] + self.newline
         self.lines.append(value)
-        self.widgets.append(None)
+        self.tokens.append(None)
 
     def clear(self):
         'S.clear() -> None -- remove all items from S'
         self.lines = []
-        self.widgets = []
+        self.tokens = []
         self.file.seek(0, 2)
 
     def extend(self, values):
@@ -97,7 +97,7 @@ class Code(collections.Sized, collections.Iterable):
         if not self[-1][-1] in ('\n', '\r'):
             self[-1] = self[-1] + self.newline
         self.lines.extend(values)
-        self.widgets.extend([None for x in values])
+        self.tokens.extend([None for x in values])
 
     def delete_characters(self, fromrow, fromcol, torow, tocol):
         start = self[fromrow][:fromcol]
