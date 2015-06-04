@@ -1,5 +1,8 @@
 # -*- coding: UTF-8 -*-
 import collections
+import io
+
+from contextlib import contextmanager
 
 
 # I'm not using abc's, because I want to be able for plugins to implement the
@@ -66,9 +69,9 @@ class Code(collections.Sized, collections.Iterable):
     def _check_eof(self):
         # When reaching the end of file, check if the last line ends in
         # a line feed. In that case, add an empty "dummy" line.
-        if self.lines[-1][-1] in ('\r', '\n'):
-            self.lines.append('')
-
+        last = self.lines[-1]
+        if last and last[-1] in (u'\r', u'\n'):
+            self.lines.append(u'')
 
     def insert(self, index, value):
         'S.insert(index, value) -- insert value before index'
@@ -105,3 +108,21 @@ class Code(collections.Sized, collections.Iterable):
         for row in range(torow, fromrow, -1):
             del self[row]
         self[fromrow] = start + end
+
+
+class CodeContext(object):
+    def __init__(self, filename, filetype):
+        self.filename = filename
+        self.filetype = filetype
+
+    @contextmanager
+    def open(self):
+        with io.open(self.filename, encoding='UTF8') as f:
+            self.code = Code(f)
+            yield self.code
+
+    def save(self):
+        # Load to end:
+        self.code[-1]
+        with io.open(self.filename, 'wt', encoding='UTF8') as f:
+            f.writelines(self.code)
