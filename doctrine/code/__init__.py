@@ -69,9 +69,15 @@ class Code(collections.Sized, collections.Iterable):
     def _check_eof(self):
         # When reaching the end of file, check if the last line ends in
         # a line feed. In that case, add an empty "dummy" line.
-        last = self.lines[-1]
-        if last and last[-1] in (u'\r', u'\n'):
+        try:
+            last = self.lines[-1]
+            if last and last[-1] in (u'\r', u'\n'):
+                self.lines.append(u'')
+                self.tokens.append(None)
+        except IndexError:
+            # An empty file!
             self.lines.append(u'')
+            self.tokens.append(None)
 
     def insert(self, index, value):
         'S.insert(index, value) -- insert value before index'
@@ -84,7 +90,7 @@ class Code(collections.Sized, collections.Iterable):
 
     def append(self, value):
         'S.append(value) -- append value to the end of the sequence'
-        if not self[-1][-1] in ('\n', '\r'):
+        if self[-1] and not self[-1][-1] in ('\n', '\r'):
             self[-1] = self[-1] + self.newline
         self.lines.append(value)
         self.tokens.append(None)
@@ -109,8 +115,25 @@ class Code(collections.Sized, collections.Iterable):
             del self[row]
         self[fromrow] = start + end
 
+    def split_row(self, row, col, newline):
+        nextline = self[row][col:]
+        try:
+            self.insert(row + 1, nextline)
+        except IndexError:
+            # row is the last line:
+            self.append(nextline)
+
+        self[row] = self[row][:col] + newline
+
+    def merge_rows(self, first, last):
+        merged = ''.join(line.rstrip(u'\r\n') for line in self[first:last])
+        self[last] = merged + self[last]
+        del self[first:last]
+
 
 class CodeContext(object):
+    """A context manager for the infile"""
+
     def __init__(self, filename, filetype):
         self.filename = filename
         self.filetype = filetype

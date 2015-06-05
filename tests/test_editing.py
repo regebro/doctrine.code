@@ -67,7 +67,8 @@ class TestCodeEditing(unittest.TestCase):
         c = Code(f, 'text')
         self.assertEqual(c[0], 'A text\n')
         c.clear()
-        self.assertRaises(IndexError, c.__getitem__, 0)
+        self.assertEqual(c[0], '')
+        self.assertRaises(IndexError, c.__getitem__, 1)
 
     def test_ending_newline(self):
         f = io.StringIO(u'A text\nwith several\nlines\n')
@@ -81,3 +82,27 @@ class TestCodeEditing(unittest.TestCase):
         f = io.StringIO(u'A text\nwith several\nlines')
         c = Code(f, 'text')
         self.assertEqual(len(c), 3)
+
+    def test_merge_split(self):
+        f = io.StringIO(u'A text\nwith several\nlines')
+        c = Code(f, 'text')
+        # Let's stick a silly newline in, just because:
+        c.split_row(1, 5, '\r\n')
+        self.assertEqual(len(c), 4)
+        self.assertEqual(c[1], u'with \r\n')
+        self.assertEqual(c[2], u'several\n')
+
+        c.merge_rows(1, 2)
+        self.assertEqual(len(c), 3)
+        self.assertEqual(c[1], u'with several\n')
+
+    def test_empty_file(self):
+        f = io.StringIO(u'')
+        c = Code(f, 'text')
+        self.assertEqual(len(c), 1)
+        self.assertEqual(c[0], '')
+        # Pressing enter in an empty file:
+        c.split_row(0, 0, '\n')
+        self.assertEqual(c[0], '\n')
+        self.assertEqual(c[1], '')
+
