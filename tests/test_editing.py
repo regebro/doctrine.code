@@ -105,4 +105,3 @@ class TestCodeEditing(unittest.TestCase):
         c.split_row(0, 0, '\n')
         self.assertEqual(c[0], '\n')
         self.assertEqual(c[1], '')
-

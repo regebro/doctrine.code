@@ -15,12 +15,10 @@ class TestCodeContext(unittest.TestCase):
 
             context = code.CodeContext(tmp.name, 'txt')
             with context.open() as c:
-                c[-1] # Load everything
+                c[-1]  # Load everything
                 del c[0]
                 context.save()
 
             tmp.seek(0)
             text = tmp.read()
             self.assertEqual(text, 'a text\n')
-
-

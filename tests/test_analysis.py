@@ -51,6 +51,7 @@ TEST_CODE = u'''class CodeLayout(TextLayout):
         return b
 '''
 
+
 # We need a "dummy" analyzer for testing.
 
 class PythonTestAnalyzer(Analyzer):
@@ -70,9 +71,9 @@ class PythonTestAnalyzer(Analyzer):
                 npos = line.find('"""', pos)
                 if npos != -1:
                     # A multiline string?
-                    if multiline is None: # Yes, the start!
+                    if multiline is None:  # Yes, the start!
                         multiline = '"""'
-                    elif multiline == '"""': # Yes, the end!
+                    elif multiline == '"""':  # Yes, the end!
                         multiline = None
 
                     pos = npos + 3
@@ -81,9 +82,9 @@ class PythonTestAnalyzer(Analyzer):
                 npos = line.find("'''", pos)
                 if npos != -1:
                     # A multiline string?
-                    if multiline is None: # Yes, the start!
+                    if multiline is None:  # Yes, the start!
                         multiline = "'''"
-                    elif multiline == "'''": # Yes, the end!
+                    elif multiline == "'''":  # Yes, the end!
                         multiline = None
 
                     pos = npos + 3
@@ -119,18 +120,23 @@ class TestAnalysis(unittest.TestCase):
                          ['    """This is a docstring"""\n'])
 
         self.assertEqual(a.find_block(6, 10),
-                        ['        """\n',
-                         '        Calculate the segments of text to display given width screen\n',
-                         '        columns to display them.\n',
-                         '\n',
-                         '        text - unicode text or byte string to display\n',
-                         '        width - number of available screen columns\n',
-                         '        wrap - wrapping mode used\n',
-                         '\n',
-                         '        Returns a layout structure without alignment applied.\n',
-                         '        """\n'])
+                         ['        """\n',
+                          '        Calculate the segments of text to display '
+                          'given width screen\n',
+                          '        columns to display them.\n',
+                          '\n',
+                          '        text - unicode text or byte string to '
+                          'display\n',
+                          '        width - number of available screen columns'
+                          '\n',
+                          '        wrap - wrapping mode used\n',
+                          '\n',
+                          '        Returns a layout structure without '
+                          'alignment applied.\n',
+                          '        """\n'])
 
         self.assertEqual(a.find_block(6, 3),
                          ['        """\n',
-                          '        Calculate the segments of text to display given width screen\n',
-                          '        columns to display them.\n',])
+                          '        Calculate the segments of text to display '
+                          'given width screen\n',
+                          '        columns to display them.\n'])
