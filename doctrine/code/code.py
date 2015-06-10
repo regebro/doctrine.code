@@ -5,12 +5,21 @@ import io
 from contextlib import contextmanager
 
 
-# Although Code is mutable, and a sequence, but does not implement all methods
-# of MutableSequence or Sequence. It only implements all methods from
-# Sized and Iterable.
+class Code(collections.MutableSequence):
+    """A lazy interface for a file with code in it
 
-class Code(collections.Sized, collections.Iterable):
-    """A lazy list interface for a file with code in it."""
+    A ``Code`` object takes a file-like object (that should be opened read
+    only) and provides an access to that file like if it is a list of lines.
+    It's much like doing ``file.readlines()`` on a file, except that the
+    access is lazy, so the file will only be read when you are accessing it.
+
+    Usually you don't create the ``Code`` object directly, but you use the
+    ``CodeContext`` context manager, see below.
+
+    In addition the the MutableSequnce interface (ie all the method a list has)
+    ``Code`` also has the special methods ``delete_characters``, ``split_row``
+    and ``merge_rows``.
+    """
 
     def __init__(self, file, read_ahead=50, newline='\n'):
         self.file = file
@@ -70,43 +79,53 @@ class Code(collections.Sized, collections.Iterable):
             self.tokens.append(None)
 
     def insert(self, index, value):
-        """S.insert(index, value) -- insert value before index"""
+        """Insert a line before index"""
         # First we have to make sure that the line where we want to
         # insert a line exists:
         self[index]
+        # Make sure the line has a line ending
+        if value and not value[-1] in ('\n', '\r'):
+            value += self.newline
         # Now we can insert:
         self.lines.insert(index, value)
         self.tokens.insert(index, None)
 
     def append(self, value):
-        """S.append(value) -- append value to the end of the sequence"""
+        """Append a line to the end of the sequence"""
+        # Make sure the previous line has a line ending:
         if self[-1] and not self[-1][-1] in ('\n', '\r'):
             self[-1] = self[-1] + self.newline
         self.lines.append(value)
         self.tokens.append(None)
 
     def clear(self):
-        """S.clear() -> None -- remove all items from S"""
+        """Empty the file"""
         self.lines = []
         self.tokens = []
         self.file.seek(0, 2)
 
     def extend(self, values):
-        """S.extend(iterable) -- extend sequence by appending elements from the
-        iterable"""
+        """Extend the file by appending lines"""
         if not self[-1][-1] in ('\n', '\r'):
             self[-1] = self[-1] + self.newline
         self.lines.extend(values)
         self.tokens.extend([None for x in values])
 
     def delete_characters(self, fromrow, fromcol, torow, tocol):
+        """Remove all characters between two positions.
+        Used for example when cutting text.
+        """
         start = self[fromrow][:fromcol]
         end = self[torow][tocol:]
         for row in range(torow, fromrow, -1):
             del self[row]
         self[fromrow] = start + end
+        # XXX For cutting it would be useful if it returned what was deleted.
 
     def split_row(self, row, col, newline):
+        """Inserts a newline in the middle of a row.
+        Used when pressing enter.
+        """
         nextline = self[row][col:]
         try:
             self.insert(row + 1, nextline)
@@ -117,6 +136,9 @@ class Code(collections.Sized, collections.Iterable):
         self[row] = self[row][:col] + newline
 
     def merge_rows(self, first, last):
+        """Merges a set of rows.
+        Used for deleting a newline or readjusting lines.
+        """
         merged = ''.join(line.rstrip(u'\r\n') for line in self[first:last])
         self[last] = merged + self[last]
         del self[first:last]
