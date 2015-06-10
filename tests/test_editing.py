@@ -34,13 +34,13 @@ class TestCodeEditing(unittest.TestCase):
         f = io.StringIO(u'A text\nwith several\nlines')
         c = Code(f, 'text')
 
-        c.delete_characters(1, 2, 1, 3)
+        c.delete_text(1, 2, 1, 3)
         self.assertEqual(c[1], 'wih several\n')
 
-        c.delete_characters(1, 3, 1, 4)
+        c.delete_text(1, 3, 1, 4)
         self.assertEqual(c[1], 'wihseveral\n')
 
-        c.delete_characters(0, 5, 2, 2)
+        c.delete_text(0, 5, 2, 2)
         self.assertEqual(c[0], 'A texnes')
         self.assertRaises(IndexError, c.__getitem__, 1)
 
@@ -105,3 +105,10 @@ class TestCodeEditing(unittest.TestCase):
         c.split_row(0, 0, '\n')
         self.assertEqual(c[0], '\n')
         self.assertEqual(c[1], '')
+
+    def test_insert_text(self):
+        f = io.StringIO(u'A text\nwith several\nlines\n')
+        c = Code(f, 'text')
+
+        c.insert_text(1, 6, 'some inserted\ntext between\n')
+        self.assertEqual(len(c), 6)

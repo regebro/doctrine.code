@@ -17,7 +17,7 @@ class Code(collections.MutableSequence):
     ``CodeContext`` context manager, see below.
 
     In addition the the MutableSequnce interface (ie all the method a list has)
-    ``Code`` also has the special methods ``delete_characters``, ``split_row``
+    ``Code`` also has the special methods ``delete_text``, ``split_row``
     and ``merge_rows``.
     """
 
@@ -111,7 +111,7 @@ class Code(collections.MutableSequence):
         self.lines.extend(values)
         self.tokens.extend([None for x in values])
 
-    def delete_characters(self, fromrow, fromcol, torow, tocol):
+    def delete_text(self, fromrow, fromcol, torow, tocol):
         """Remove all characters between two positions.
         Used for example when cutting text.
         """
@@ -121,6 +121,9 @@ class Code(collections.MutableSequence):
             del self[row]
         self[fromrow] = start + end
         # XXX For cutting it would be useful if it returned what was deleted.
+
+    def insert_text(self, row, col, text):
+        pass
 
     def split_row(self, row, col, newline):
         """Inserts a newline in the middle of a row.
