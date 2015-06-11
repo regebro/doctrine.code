@@ -34,15 +34,18 @@ class TestCodeEditing(unittest.TestCase):
         f = io.StringIO(u'A text\nwith several\nlines')
         c = Code(f, 'text')
 
-        c.delete_text(1, 2, 1, 3)
+        t = c.delete_text(1, 2, 1, 3)
         self.assertEqual(c[1], 'wih several\n')
+        self.assertEqual(t, 't')
 
-        c.delete_text(1, 3, 1, 4)
+        t = c.delete_text(1, 3, 1, 4)
         self.assertEqual(c[1], 'wihseveral\n')
+        self.assertEqual(t, ' ')
 
-        c.delete_text(0, 5, 2, 2)
+        t = c.delete_text(0, 5, 2, 2)
         self.assertEqual(c[0], 'A texnes')
         self.assertRaises(IndexError, c.__getitem__, 1)
+        self.assertEqual(t, 't\nwihseveral\nli')
 
     def test_add_lines(self):
         f = io.StringIO(u'A text\nwith several\nlines')
@@ -106,9 +109,26 @@ class TestCodeEditing(unittest.TestCase):
         self.assertEqual(c[0], '\n')
         self.assertEqual(c[1], '')
 
-    def test_insert_text(self):
+    def test_insert_row(self):
+        f = io.StringIO(u'A text\nwith several\nlines')
+        c = Code(f, 'text')
+
+        c.insert_text(1, 5, u'some inserted text ')
+        self.assertEqual(len(c), 3)
+        self.assertEqual(c[1], u'with some inserted text several\n')
+
+        c.insert_text(2, 0, u'bop')
+        self.assertEqual(len(c), 3)
+        self.assertEqual(c[2], u'boplines')
+
+        c.insert_text(2, 8, u'iolo')
+        self.assertEqual(len(c), 3)
+        self.assertEqual(c[2], u'boplinesiolo')
+
+    def test_insert_rows(self):
         f = io.StringIO(u'A text\nwith several\nlines\n')
         c = Code(f, 'text')
 
-        c.insert_text(1, 6, 'some inserted\ntext between\n')
+        c.insert_text(1, 5, u'some inserted\r\ntext between\n')
         self.assertEqual(len(c), 6)
+        self.assertEqual(c[1], u'with some inserted\r\n')

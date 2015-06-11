@@ -4,6 +4,8 @@ import io
 
 from contextlib import contextmanager
 
+NEWLINES = u'\n\r'
+
 
 class Code(collections.MutableSequence):
     """A lazy interface for a file with code in it
@@ -16,7 +18,7 @@ class Code(collections.MutableSequence):
     Usually you don't create the ``Code`` object directly, but you use the
     ``CodeContext`` context manager, see below.
 
-    In addition the the MutableSequnce interface (ie all the method a list has)
+    In addition the the MutableSequence interface (ie all the method a list has)
     ``Code`` also has the special methods ``delete_text``, ``split_row``
     and ``merge_rows``.
     """
@@ -70,7 +72,7 @@ class Code(collections.MutableSequence):
         # a line feed. In that case, add an empty "dummy" line.
         try:
             last = self.lines[-1]
-            if last and last[-1] in (u'\r', u'\n'):
+            if last and last[-1] in NEWLINES:
                 self.lines.append(u'')
                 self.tokens.append(None)
         except IndexError:
@@ -84,7 +86,7 @@ class Code(collections.MutableSequence):
         # insert a line exists:
         self[index]
         # Make sure the line has a line ending
-        if value and not value[-1] in ('\n', '\r'):
+        if value and not value[-1] in NEWLINES:
             value += self.newline
         # Now we can insert:
         self.lines.insert(index, value)
@@ -93,7 +95,7 @@ class Code(collections.MutableSequence):
     def append(self, value):
         """Append a line to the end of the sequence"""
         # Make sure the previous line has a line ending:
-        if self[-1] and not self[-1][-1] in ('\n', '\r'):
+        if self[-1] and not self[-1][-1] in NEWLINES:
             self[-1] = self[-1] + self.newline
         self.lines.append(value)
         self.tokens.append(None)
@@ -106,24 +108,87 @@ class Code(collections.MutableSequence):
 
     def extend(self, values):
         """Extend the file by appending lines"""
-        if not self[-1][-1] in ('\n', '\r'):
+        if not self[-1][-1] in NEWLINES:
             self[-1] = self[-1] + self.newline
         self.lines.extend(values)
         self.tokens.extend([None for x in values])
 
     def delete_text(self, fromrow, fromcol, torow, tocol):
-        """Remove all characters between two positions.
+        """Remove all text between two positions and return the deleted text.
         Used for example when cutting text.
         """
         start = self[fromrow][:fromcol]
         end = self[torow][tocol:]
+
+        # Save what is deleted, so it can be returned.
+        if fromrow != torow:
+            deleted = [self[torow][:tocol]]
+            rest = self[fromrow][fromcol:]
+        else:
+            deleted = []
+            rest = self[fromrow][fromcol:tocol]
+
         for row in range(torow, fromrow, -1):
+            if row != torow:
+                deleted.append(self[row])
             del self[row]
+        deleted.append(rest)
+
         self[fromrow] = start + end
-        # XXX For cutting it would be useful if it returned what was deleted.
+        return ''.join(reversed(deleted))
 
     def insert_text(self, row, col, text):
-        pass
+        """Inserts a multiline text at a certain row and column.
+        Used for example when pasting text."""
+        # First split the text into lines:
+        if row >= len(self):
+            raise ValueError("Can not insert text after end of file")
+        curline = self[row]
+        if col > len(curline.rstrip(NEWLINES)):
+            raise ValueError("Can not insert text after end of line")
+
+        lines = []
+        line = ''
+        newline = False
+        for c in text:
+            if newline:
+                if c in NEWLINES and c != newline:
+                    # Two char newline: Add c to the new line
+                    line += c
+                    c = ''
+
+                lines.append(line)
+                line = c
+                newline = False
+                continue
+
+            line += c
+            if c in NEWLINES:
+                newline = c
+
+        if line:
+            lines.append(line)
+
+        # Now insert this text.
+        if len(lines) == 1:
+            self[row] = curline[:col] + lines[0] + curline[col:]
+            return
+
+        # Multiple lines. Split the current row with no newline:
+        self.split_row(row, col, '')
+        # Add the first line to the current line:
+        self[row] += lines[0]
+        del lines[0]
+
+        # If the last line doesn't end with a newline, it should be
+        # prepended to the rest of the current line, now newly split:
+        if lines[-1][-1] not in NEWLINES:
+            self[row + 1] = lines[-1] + self[row + 1]
+            del lines[-1]
+
+        # Now insert remaining lines:
+        for line in reversed(lines):
+            self.insert(row + 1, line)
 
     def split_row(self, row, col, newline):
         """Inserts a newline in the middle of a row.
@@ -142,7 +207,7 @@ class Code(collections.MutableSequence):
         """Merges a set of rows.
         Used for deleting a newline or readjusting lines.
         """
-        merged = ''.join(line.rstrip(u'\r\n') for line in self[first:last])
+        merged = ''.join(line.rstrip(NEWLINES) for line in self[first:last])
         self[last] = merged + self[last]
         del self[first:last]
 
