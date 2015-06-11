@@ -8,9 +8,7 @@ NEWLINES = u'\n\r'
 
 
 class Code(collections.MutableSequence):
-    """A lazy interface for a file with code in it
-
-    A ``Code`` object takes a file-like object (that should be opened read
+    """A ``Code`` object takes a file-like object (that should be opened read
     only) and provides an access to that file like if it is a list of lines.
     It's much like doing ``file.readlines()`` on a file, except that the
     access is lazy, so the file will only be read when you are accessing it.
@@ -19,8 +17,8 @@ class Code(collections.MutableSequence):
     ``CodeContext`` context manager, see below.
 
     In addition the the MutableSequence interface (ie all the method a list has)
-    ``Code`` also has the special methods ``delete_text``, ``split_row``
-    and ``merge_rows``.
+    ``Code`` also has the special methods ``delete_text``, ``insert_text``,
+    ``split_row`` and ``merge_rows``.
     """
 
     def __init__(self, file, read_ahead=50, newline='\n'):
@@ -213,7 +211,9 @@ class Code(collections.MutableSequence):
 
 
 class CodeContext(object):
-    """A context manager for the infile"""
+    """A context manager that handles the opening of and saving to the file used
+    by a Code instance.
+    """
 
     def __init__(self, filename, filetype):
         self.filename = filename
@@ -221,11 +221,13 @@ class CodeContext(object):
 
     @contextmanager
     def open(self):
+        """Returns a Code instance wrapping the file"""
         with io.open(self.filename, encoding='UTF8') as f:
             self.code = Code(f)
             yield self.code
 
     def save(self):
+        """Saves the content of the code object to the file"""
         # Load to end:
         self.code[-1]
         with io.open(self.filename, 'wt', encoding='UTF8') as f:
